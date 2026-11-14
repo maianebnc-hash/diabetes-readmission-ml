@@ -1,15 +1,3 @@
-"""Step 2 - Feature engineering and preprocessing.
-
-Two building blocks, both designed to sit inside one scikit-learn Pipeline (Session 6):
-  - FeatureEngineer: fixed, row-by-row rules. Nothing is learned from the data.
-  - build_preprocessor(): imputation, scaling and one-hot encoding. Everything it
-    learns (medians, means, category levels) comes from the training fold only.
-
-Later steps import build_feature_pipeline() and append a model to it.
-
-Run:  python step2_feature_engineering.py
-Outputs go to reports/figures and reports/tables.
-"""
 import matplotlib
 
 matplotlib.use("Agg")
