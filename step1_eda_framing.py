@@ -1,15 +1,3 @@
-"""Step 1 - EDA and problem framing.
-
-Follows the five framing questions of Session 1:
-  1. What is one row, and is the data sound?   -> data quality checks
-  2. What is the target, and over what horizon? -> binary 30-day readmission
-  3. Could a feature leak the answer?           -> leakage audit
-  4. How do we split honestly?                  -> patient-grouped dev/test split + CV folds
-  5. What is the no-skill baseline?             -> scores any model must beat
-
-Run:  python step1_eda_framing.py
-Outputs go to reports/figures and reports/tables.
-"""
 import matplotlib
 
 matplotlib.use("Agg")
