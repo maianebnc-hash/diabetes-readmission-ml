@@ -1,0 +1,5 @@
+,average_precision,ap_std,roc_auc,brier,mean_predicted_risk
+none,0.2123,0.0113,0.6634,0.0969,0.1137
+class_weight,0.2109,0.0111,0.6645,0.2263,0.4654
+undersampling,0.208,0.0089,0.6599,0.2282,0.4668
+smote,0.2034,0.0108,0.6502,0.2252,0.4565
