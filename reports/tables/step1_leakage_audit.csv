@@ -1,0 +1,11 @@
+group,columns,available_at_discharge,risk,comment
+Identifiers,"encounter_id, patient_nbr",Yes,High,No clinical meaning; patient_nbr links encounters of one patient -> used only to group the split
+Demographics,"race, gender, age, weight",Yes,Low,Known at admission; race and gender are sensitive attributes (fairness audit)
+Admission,"admission_type_id, admission_source_id, payer_code, medical_specialty",Yes,Low,Recorded when the patient arrives
+Stay,"time_in_hospital, num_lab_procedures, num_procedures, num_medications",Yes,Low,"Complete once the stay ends, i.e. at prediction time"
+Discharge,discharge_disposition_id,Yes,Medium,Known at discharge; death/hospice codes make readmission impossible -> those rows are excluded
+History,"number_outpatient, number_emergency, number_inpatient",Yes,Low,Visits in the year BEFORE this encounter
+Diagnoses,"diag_1, diag_2, diag_3, number_diagnoses",Yes,Low,Coded for this stay
+Lab tests,"max_glu_serum, A1Cresult",Yes,Low,Measured during the stay; 'None' means not measured
+Medication,"23 drug columns, change, diabetesMed",Yes,Low,Prescriptions decided during the stay
+Outcome,readmitted,No,Target,"Only known 30 days later: it is the label, never a feature"
