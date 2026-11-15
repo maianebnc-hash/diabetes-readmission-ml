@@ -1,0 +1,4 @@
+,val_ap,ap_gain,recall_top10,recall_top10_gain,cost,cost_gain
+logistic_regression,0.2123,,0.2278,,60653.0,
+random_forest,0.2249,0.0126,0.2347,0.0069,60089.0,-564.0
+gradient_boosting,0.233,0.0081,0.2407,0.0061,59363.0,-726.0

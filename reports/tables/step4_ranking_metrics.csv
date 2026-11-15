@@ -1,0 +1,4 @@
+,val_ap,val_ap_std,val_roc_auc,train_ap,train_minus_val_ap
+logistic_regression,0.2123,0.0113,0.6634,0.2181,0.0059
+random_forest,0.2249,0.014,0.6681,0.8559,0.631
+gradient_boosting,0.233,0.0126,0.6732,0.3904,0.1575
