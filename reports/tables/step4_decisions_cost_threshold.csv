@@ -1,0 +1,4 @@
+,threshold,flagged_share,precision,recall,f1,cost
+logistic_regression,0.09,0.5342,0.1548,0.7263,0.2553,60653.0
+random_forest,0.09,0.5974,0.1492,0.7825,0.2505,60089.0
+gradient_boosting,0.09,0.5443,0.1564,0.7473,0.2586,59363.0

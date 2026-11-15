@@ -1,0 +1,16 @@
+model,,fold,train_ap,val_ap,val_roc_auc
+logistic_regression,0,0,0.2114,0.2342,0.6732
+logistic_regression,1,1,0.2205,0.2031,0.6608
+logistic_regression,2,2,0.2199,0.2064,0.6548
+logistic_regression,3,3,0.2204,0.2062,0.6636
+logistic_regression,4,4,0.2185,0.2115,0.6645
+random_forest,0,0,0.8683,0.25,0.6817
+random_forest,1,1,0.851,0.2158,0.666
+random_forest,2,2,0.8483,0.2134,0.6575
+random_forest,3,3,0.8505,0.2148,0.667
+random_forest,4,4,0.8617,0.2305,0.6684
+gradient_boosting,0,0,0.3846,0.2573,0.6855
+gradient_boosting,1,1,0.3917,0.2265,0.6712
+gradient_boosting,2,2,0.395,0.2227,0.6627
+gradient_boosting,3,3,0.3896,0.2254,0.6748
+gradient_boosting,4,4,0.3914,0.233,0.672
