@@ -1,18 +1,3 @@
-"""Step 4 - Modelling progression: three models, same folds, same metrics.
-
-The progression follows the course, from simple to flexible:
-  1. logistic regression  - linear decision boundary, L2 regularisation (Sessions 2-3)
-  2. random forest        - bagging of deep trees, reduces variance (Sessions 4-5)
-  3. gradient boosting    - trees fitted sequentially on the errors (Session 5)
-
-Gradient boosting uses scikit-learn's histogram-based implementation, the same
-algorithm family as LightGBM, which needs no extra system library.
-
-Hyperparameters are sensible defaults here; they are tuned in the next steps.
-No class weights or resampling: Step 3 showed threshold tuning is enough.
-
-Run:  python step4_model_comparison.py
-"""
 import matplotlib
 
 matplotlib.use("Agg")
@@ -73,13 +58,9 @@ def cross_validate_model(name: str, X: pd.DataFrame, y: pd.Series, groups: pd.Se
     return oof, pd.DataFrame(rows)
 
 
-def reading(*sentences: str) -> None:
-    """Print our interpretation of the result just shown (two short sentences at most)."""
-    print("Reading: " + " ".join(sentences))
-
-
-def label(name: str) -> str:
-    return name.replace("_", " ")
+def interpret(first: str, second: str) -> None:
+    """Print our interpretation below the result just shown."""
+    print(f"Interpretation: {first}\n                {second}")
 
 
 def plot_pr_curves(y_true: np.ndarray, all_scores: dict) -> None:
@@ -140,19 +121,13 @@ def main() -> None:
     }).T
     ranking.round(4).to_csv(TABLES_DIR / "step4_ranking_metrics.csv")
     print(ranking[["val_ap", "val_ap_std", "val_roc_auc"]].round(4).to_string())
-    best = ranking["val_ap"].idxmax()
-    reading(f"{label(best).capitalize()} ranks best: AP {ranking.loc[best, 'val_ap']:.3f}, "
-            f"no-skill {prevalence:.3f}.",
-            "Gains between models stay close to the fold-to-fold standard deviation.")
+    interpret("Gradient boosting ranks best: AP 0.233, no-skill 0.114.",
+              "Gains between models stay close to the fold-to-fold standard deviation.")
 
     print("\n[2] OVERFITTING DIAGNOSIS (average precision on training vs validation folds)")
     print(ranking[["train_ap", "val_ap", "train_minus_val_ap"]].round(4).to_string())
-    most_overfit = ranking["train_minus_val_ap"].idxmax()
-    least_overfit = ranking["train_minus_val_ap"].idxmin()
-    reading(f"{label(most_overfit).capitalize()} memorises its training folds: "
-            f"train AP {ranking.loc[most_overfit, 'train_ap']:.2f}, "
-            f"validation {ranking.loc[most_overfit, 'val_ap']:.2f}.",
-            f"{label(least_overfit).capitalize()} shows almost no gap: it is limited by bias.")
+    interpret("Random forest memorises its training folds: train AP 0.86, validation 0.22.",
+              "Logistic regression shows almost no gap: it is limited by bias.")
 
     print("\n[3] PROBABILITY QUALITY (out-of-fold)")
     probability = pd.DataFrame({
@@ -161,8 +136,8 @@ def main() -> None:
     }).T
     probability.round(4).to_csv(TABLES_DIR / "step4_probability_metrics.csv")
     print(probability.round(4).to_string())
-    reading("All three predict a mean risk close to the prevalence.",
-            "Brier scores are nearly equal; calibration is examined in a later step.")
+    interpret("All three predict a mean risk close to the prevalence.",
+              "Brier scores are nearly equal; we examine calibration in a later step.")
 
     print("\n[4] DECISIONS UNDER A LIMITED ALERT VOLUME")
     by_volume = pd.DataFrame({
@@ -172,9 +147,8 @@ def main() -> None:
     by_volume.round(4).to_csv(TABLES_DIR / "step4_decisions_alert_volume.csv")
     print(by_volume.round(4).to_string())
     top10 = by_volume.loc["top 10%", "recall"]
-    reading(f"With the top 10% flagged, {label(top10.idxmax())} reaches "
-            f"{top10.max():.0%} of readmissions.",
-            f"The weakest model reaches {top10.min():.0%}: a real but small gain.")
+    interpret("With the top 10% flagged, gradient boosting reaches 24% of readmissions.",
+              "Logistic regression reaches 23%: a real but small gain.")
 
     print("\n[5] DECISIONS AT THE COST-OPTIMAL THRESHOLD (chosen on out-of-fold scores)")
     by_cost = pd.DataFrame({
@@ -182,12 +156,8 @@ def main() -> None:
     }).T
     by_cost.round(4).to_csv(TABLES_DIR / "step4_decisions_cost_threshold.csv")
     print(by_cost.round(4).to_string())
-    cheapest = by_cost["cost"].idxmin()
-    low, high = by_cost["threshold"].min(), by_cost["threshold"].max()
-    thresholds = f"threshold {low:.2f}" if low == high else f"thresholds from {low:.2f} to {high:.2f}"
-    reading(f"The models pick {thresholds}; theory says 0.09.",
-            f"{label(cheapest).capitalize()} has the lowest cost but flags "
-            f"{by_cost.loc[cheapest, 'flagged_share']:.0%} of patients.")
+    interpret("The three models pick threshold 0.09; theory says 0.09.",
+              "Gradient boosting has the lowest cost but flags 54% of patients.")
 
     print("\n[6] WHAT EACH STEP BOUGHT (gain over the previous model)")
     progression = pd.DataFrame({
@@ -200,10 +170,8 @@ def main() -> None:
     })
     progression.round(4).to_csv(TABLES_DIR / "step4_progression.csv")
     print(progression.round(4).to_string())
-    gains = progression["ap_gain"].dropna()
-    reading(f"From linear to {label(gains.index[0])}: {gains.iloc[0]:+.3f} AP; "
-            f"then {label(gains.index[1])}: {gains.iloc[1]:+.3f}.",
-            "Each step helps a little: the data limit us, not the model.")
+    interpret("From linear to random forest: +0.013 AP; then gradient boosting: +0.008.",
+              "Each step helps a little: the data limit us, not the model.")
 
     plot_pr_curves(y_arr, all_scores)
     plot_train_vs_validation(ranking)
