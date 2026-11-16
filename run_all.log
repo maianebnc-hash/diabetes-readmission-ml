@@ -1,0 +1,262 @@
+Step 1: EDA and framing
+
+[1] Data quality
+Rows: 101766
+Columns: 50
+Duplicated rows: 0
+Duplicated encounter_id: 0
+Patients: 71518
+Patients with several encounters: 16773 (max 40)
+
+Columns with missing values:
+weight               0.9686
+medical_specialty    0.4908
+payer_code           0.3956
+race                 0.0223
+diag_3               0.0140
+diag_2               0.0035
+diag_1               0.0002
+
+Columns with a single value: examide, citoglipton
+
+Numeric ranges:
+                    min   50%   mean    max
+time_in_hospital    1.0   4.0   4.40   14.0
+num_lab_procedures  1.0  44.0  43.10  132.0
+num_procedures      0.0   1.0   1.34    6.0
+num_medications     1.0  15.0  16.02   81.0
+number_outpatient   0.0   0.0   0.37   42.0
+number_emergency    0.0   0.0   0.20   76.0
+number_inpatient    0.0   0.0   0.64   21.0
+number_diagnoses    1.0   8.0   7.42   16.0
+
+[2] Target
+Raw outcome:
+NO     0.5391
+>30    0.3493
+<30    0.1116
+
+Death/hospice discharges removed: 2423 (readmission rate 0.0177)
+Framed dataset: 99340 encounters
+Positive rate: 0.1139
+Imbalance: 1 positive for 7.8 negatives
+
+[3] Leakage check
+group        available_at_discharge risk  
+Identifiers  Yes                    High  
+Demographics Yes                    Low   
+Admission    Yes                    Low   
+Stay         Yes                    Low   
+Discharge    Yes                    Medium
+History      Yes                    Low   
+Diagnoses    Yes                    Low   
+Lab tests    Yes                    Low   
+Medication   Yes                    Low   
+Outcome      No                     Target
+
+[4] Train/test split
+development  rows: 79473   patients: 56036   positive rate: 0.1139
+test         rows: 19867   patients: 13951   positive rate: 0.1139
+Patients in both: 0
+
+fold 0  train: 63579  val: 15894  val positive rate: 0.1139  shared patients: 0
+fold 1  train: 63577  val: 15896  val positive rate: 0.1139  shared patients: 0
+fold 2  train: 63580  val: 15893  val positive rate: 0.1139  shared patients: 0
+fold 3  train: 63578  val: 15895  val positive rate: 0.1139  shared patients: 0
+fold 4  train: 63578  val: 15895  val positive rate: 0.1139  shared patients: 0
+
+[5] Readmission rate by feature
+                                      n  positive_rate
+feature          level                                
+number_inpatient 0                53065         0.0860
+                 1                15156         0.1317
+                 2                 5798         0.1811
+                 3                 2603         0.2121
+                 4                 1272         0.2437
+                 5                 1579         0.3673
+race             AfricanAmerican  15014         0.1160
+                 Asian              514         0.1051
+                 Caucasian        59394         0.1149
+                 Hispanic          1639         0.1031
+                 Missing           1769         0.0854
+                 Other             1143         0.0962
+gender           Female           42923         0.1146
+                 Male             36550         0.1130
+
+[6] Baselines
+                                    accuracy  recall  average_precision  roc_auc
+majority (always 'not readmitted')    0.8861  0.0000             0.1139   0.5000
+random                                0.4984  0.5071             0.1148   0.5019
+
+Accuracy is misleading: always predicting 'no readmission' is 89% accurate but finds no readmission.
+A no-skill model's average precision equals the positive rate.
+
+Figures saved in reports/figures
+Tables saved in reports/tables
+
+Step 2: Feature engineering
+
+[1] Dropped columns
+  encounter_id    identifier, no clinical meaning
+  patient_nbr     identifier, used only to group the split
+  weight          97% missing
+  examide         single value in the whole dataset
+  citoglipton     single value in the whole dataset
+
+[2] New features
+                                         n  positive_rate
+feature             level                                
+age_mid             5.0                125         0.0240
+                    15.0               576         0.0573
+                    25.0              1337         0.1548
+                    35.0              3011         0.1099
+                    45.0              7704         0.1128
+                    55.0             13634         0.0945
+                    65.0             17553         0.1132
+                    75.0             20318         0.1206
+                    85.0             13171         0.1259
+                    95.0              2044         0.1096
+prior_visits_log    (-0.001, 1.099]  67117         0.0989
+                    (1.099, 4.394]   12356         0.1951
+has_prior_inpatient 0                53065         0.0860
+                    1                26408         0.1699
+n_diabetes_meds     0                18094         0.0980
+                    1                36766         0.1265
+                    2                17368         0.1082
+                    3                 6122         0.1036
+                    4                 1069         0.1020
+                    5                   49         0.0000
+                    6                    5         0.4000
+n_med_changes       0                57862         0.1064
+                    1                20466         0.1346
+                    2                 1052         0.1198
+                    3                   89         0.1348
+                    4                    4         0.0000
+meds_per_day        (0.0823, 2.6]    20065         0.1180
+                    (2.6, 4.0]       22050         0.1210
+                    (4.0, 6.1]       17492         0.1146
+                    (6.1, 42.0]      19866         0.1012
+diag_1_group        Circulatory      23694         0.1160
+                    Diabetes          6952         0.1333
+                    Digestive         7531         0.1061
+                    Genitourinary     3989         0.1113
+                    Injury            5463         0.1226
+                    Missing             14         0.2857
+                    Musculoskeletal   3963         0.0979
+                    Neoplasms         2520         0.1067
+                    Other            14305         0.1179
+                    Respiratory      11042         0.1010
+
+[3] Final feature matrix
+Raw columns: 49
+Features: 14 numeric + 35 categorical
+Columns after one-hot encoding: 157, missing values: 0
+
+[4] Leakage check on one fold
+Fitted on the training fold only (63579 rows)
+Applied to the validation fold (15894 rows): 157 columns, 0 missing values
+Mean of scaled columns on the training fold: -0.000 (exactly 0 by construction)
+Mean of scaled columns on the validation fold: 0.003 (close to 0, as its statistics were never used)
+
+Step 3: Class imbalance
+Development set: 79473 encounters, 9051 positives (11.39%)
+Ratio negatives/positives: 7.8
+
+[1] Ranking metrics
+               average_precision  ap_std  roc_auc   brier  mean_predicted_risk
+none                      0.2123  0.0113   0.6634  0.0969               0.1137
+class_weight              0.2109  0.0111   0.6645  0.2263               0.4654
+undersampling             0.2080  0.0089   0.6599  0.2282               0.4668
+smote                     0.2034  0.0108   0.6502  0.2252               0.4565
+
+[2] Threshold 0.5
+               threshold  flagged_share  precision  recall      f1     cost
+none                 0.5         0.0027     0.4744  0.0113  0.0220  89603.0
+class_weight         0.5         0.3524     0.1832  0.5669  0.2769  62075.0
+undersampling        0.5         0.3618     0.1783  0.5662  0.2711  62886.0
+smote                0.5         0.3638     0.1729  0.5522  0.2633  64444.0
+
+[3] Best threshold by cost
+Costs used: 10 per missed readmission, 1 per false alarm
+
+               threshold  flagged_share  precision  recall      f1     cost
+none                0.09         0.5342     0.1548  0.7263  0.2553  60653.0
+class_weight        0.40         0.6305     0.1459  0.8080  0.2472  60178.0
+undersampling       0.44         0.5156     0.1574  0.7124  0.2578  60560.0
+smote               0.43         0.5322     0.1526  0.7133  0.2515  61789.0
+
+Cost if we flag everyone: 70422
+Cost if we flag no one: 90510
+
+[4] Flagging the top 10% and 20%
+                       threshold  precision  recall    lift
+top 10% none              0.1953     0.2594  0.2278  2.2780
+        class_weight      0.6614     0.2562  0.2249  2.2493
+        undersampling     0.6660     0.2544  0.2234  2.2338
+        smote             0.6734     0.2505  0.2200  2.1996
+top 20% none              0.1485     0.2147  0.3770  1.8848
+        class_weight      0.5801     0.2139  0.3756  1.8782
+        undersampling     0.5842     0.2130  0.3740  1.8699
+        smote             0.5887     0.2079  0.3652  1.8257
+
+Step 4: Model comparison
+Cross-validating logistic_regression ...
+Cross-validating random_forest ...
+Cross-validating gradient_boosting ...
+
+[1] Ranking metrics
+                     val_ap  val_ap_std  val_roc_auc
+logistic_regression  0.2123      0.0113       0.6634
+random_forest        0.2249      0.0140       0.6681
+gradient_boosting    0.2330      0.0126       0.6732
+
+Interpretation: gradient_boosting ranks best: AP 0.233, no-skill 0.114.
+                Gains between models stay close to the fold-to-fold standard deviation (0.013).
+
+[2] Train vs validation
+                     train_ap  val_ap  train_minus_val_ap
+logistic_regression    0.2181  0.2123              0.0059
+random_forest          0.8559  0.2249              0.6310
+gradient_boosting      0.3904  0.2330              0.1575
+
+Interpretation: random_forest overfits most: train AP 0.86, validation 0.22.
+                logistic_regression has the smallest gap (0.006): it underfits rather than overfits.
+
+[3] Probabilities
+                      brier  mean_predicted_risk  prevalence
+logistic_regression  0.0969               0.1137      0.1139
+random_forest        0.0964               0.1148      0.1139
+gradient_boosting    0.0958               0.1133      0.1139
+
+Interpretation: Mean predicted risk ranges from 0.113 to 0.115; the prevalence is 0.114.
+                Brier scores range from 0.0958 to 0.0969; we examine calibration in a later step.
+
+[4] Flagging the top 10% and 20%
+                             threshold  precision  recall    lift
+top 10% logistic_regression     0.1953     0.2594  0.2278  2.2780
+        random_forest           0.1946     0.2672  0.2347  2.3465
+        gradient_boosting       0.1972     0.2742  0.2407  2.4073
+top 20% logistic_regression     0.1485     0.2147  0.3770  1.8848
+        random_forest           0.1573     0.2188  0.3843  1.9213
+        gradient_boosting       0.1507     0.2255  0.3960  1.9798
+
+Interpretation: With the top 10% flagged, gradient_boosting catches 24% of readmissions.
+                logistic_regression catches 23%.
+
+[5] Best threshold by cost
+                     threshold  flagged_share  precision  recall      f1     cost
+logistic_regression       0.09         0.5342     0.1548  0.7263  0.2553  60653.0
+random_forest             0.09         0.5974     0.1492  0.7825  0.2505  60089.0
+gradient_boosting         0.09         0.5443     0.1564  0.7473  0.2586  59363.0
+
+Interpretation: Chosen thresholds: 0.09, 0.09, 0.09; theory says 0.09.
+                gradient_boosting has the lowest cost but flags 54% of patients.
+
+[6] Improvement per model
+                     val_ap  ap_gain  recall_top10  recall_top10_gain     cost  cost_gain
+logistic_regression  0.2123        -        0.2278                  -  60653.0          -
+random_forest        0.2249   0.0126        0.2347             0.0069  60089.0     -564.0
+gradient_boosting    0.2330   0.0081        0.2407             0.0061  59363.0     -726.0
+
+Interpretation: From linear to random forest: +0.013 AP; then gradient boosting: +0.008.
+                Each step helps a little: the data limit us, not the model.
