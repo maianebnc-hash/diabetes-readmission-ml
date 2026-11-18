@@ -1,0 +1,4 @@
+model,worst_ap,median_ap,best_ap,minutes,best_minus_worst
+logistic_regression,0.207,0.2121,0.2124,3.0743,0.0053
+random_forest,0.2061,0.2235,0.2279,16.8944,0.0218
+gradient_boosting,0.2088,0.2285,0.2332,14.9253,0.0244

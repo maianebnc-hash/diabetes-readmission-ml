@@ -1,0 +1,4 @@
+,patients,readmitted,prevalence,mean_predicted_risk,flagged_share,recall,recall_low,recall_high,false_positive_rate,precision
+Caucasian,14826.0,1731.0,0.1168,0.1149,0.1023,0.2484,0.2286,0.2693,0.0829,0.2836
+AfricanAmerican,3758.0,407.0,0.1083,0.1135,0.1006,0.226,0.1881,0.2691,0.0853,0.2434
+Other or unknown,1283.0,125.0,0.0974,0.0996,0.0935,0.248,0.1806,0.3305,0.0769,0.2583

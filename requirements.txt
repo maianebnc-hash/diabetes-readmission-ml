@@ -4,3 +4,5 @@ scikit-learn>=1.5
 matplotlib>=3.8
 certifi>=2024.2
 imbalanced-learn>=0.12
+optuna>=3.6
+shap>=0.45

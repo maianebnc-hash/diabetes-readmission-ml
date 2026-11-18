@@ -1,0 +1,21 @@
+,value,shap_log_odds,patient,predicted_risk
+discharge_disposition_id_2,1.0,0.8456,"high risk, readmitted",0.687
+discharge_disposition_id_1,0.0,0.4059,"high risk, readmitted",0.687
+number_inpatient,1.0,0.3445,"high risk, readmitted",0.687
+diag_1_group_Other,1.0,0.3098,"high risk, readmitted",0.687
+payer_code_Missing,1.0,0.269,"high risk, readmitted",0.687
+number_inpatient,16.0,1.7563,"high risk, not readmitted",0.5719
+prior_visits_log,3.0,0.4216,"high risk, not readmitted",0.5719
+number_emergency,3.0,0.1716,"high risk, not readmitted",0.5719
+payer_code_HM,1.0,-0.0978,"high risk, not readmitted",0.5719
+diag_3_group_Genitourinary,1.0,0.0841,"high risk, not readmitted",0.5719
+number_inpatient,0.0,-0.2778,"low risk, readmitted",0.0228
+diag_1_group_Respiratory,1.0,-0.2181,"low risk, readmitted",0.0228
+discharge_disposition_id_1,1.0,-0.2026,"low risk, readmitted",0.0228
+number_diagnoses,5.0,-0.1894,"low risk, readmitted",0.0228
+n_diabetes_meds,0.0,-0.1084,"low risk, readmitted",0.0228
+number_inpatient,1.0,0.3068,median risk,0.0984
+discharge_disposition_id_1,1.0,-0.1314,median risk,0.0984
+prior_visits_log,1.1,0.1138,median risk,0.0984
+age_mid,55.0,-0.0898,median risk,0.0984
+glimepiride_Steady,1.0,-0.0759,median risk,0.0984

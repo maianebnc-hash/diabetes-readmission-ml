@@ -1,0 +1,4 @@
+model,file,size_mb,same_predictions_after_reload
+logistic_regression,models/step5_logistic_regression.joblib,0.01,True
+random_forest,models/step5_random_forest.joblib,48.82,True
+gradient_boosting,models/step5_gradient_boosting.joblib,0.29,True

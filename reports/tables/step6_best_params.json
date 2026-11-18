@@ -1,0 +1,21 @@
+{
+  "logistic_regression": {
+    "C": 0.06672367170464209,
+    "class_weight": null
+  },
+  "random_forest": {
+    "n_estimators": 300,
+    "max_depth": 11,
+    "min_samples_leaf": 6,
+    "max_features": 0.38378615318787773,
+    "class_weight": null
+  },
+  "gradient_boosting": {
+    "learning_rate": 0.024396707414267107,
+    "max_iter": 250,
+    "max_leaf_nodes": 38,
+    "min_samples_leaf": 61,
+    "l2_regularization": 0.00393714841858338,
+    "class_weight": null
+  }
+}

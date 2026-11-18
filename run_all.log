@@ -93,7 +93,6 @@ A no-skill model's average precision equals the positive rate.
 
 Figures saved in reports/figures
 Tables saved in reports/tables
-
 Step 2: Feature engineering
 
 [1] Dropped columns
@@ -157,7 +156,6 @@ Fitted on the training fold only (63579 rows)
 Applied to the validation fold (15894 rows): 157 columns, 0 missing values
 Mean of scaled columns on the training fold: -0.000 (exactly 0 by construction)
 Mean of scaled columns on the validation fold: 0.003 (close to 0, as its statistics were never used)
-
 Step 3: Class imbalance
 Development set: 79473 encounters, 9051 positives (11.39%)
 Ratio negatives/positives: 7.8
@@ -198,7 +196,6 @@ top 20% none              0.1485     0.2147  0.3770  1.8848
         class_weight      0.5801     0.2139  0.3756  1.8782
         undersampling     0.5842     0.2130  0.3740  1.8699
         smote             0.5887     0.2079  0.3652  1.8257
-
 Step 4: Model comparison
 Cross-validating logistic_regression ...
 Cross-validating random_forest ...
@@ -260,3 +257,438 @@ gradient_boosting    0.2330   0.0081        0.2407             0.0061  59363.0  
 
 Interpretation: From linear to random forest: +0.013 AP; then gradient boosting: +0.008.
                 Each step helps a little: the data limit us, not the model.
+Step 5: Pipeline
+
+[1] Pipeline structure
+logistic_regression
+                        object                 learned_during_fit
+step                                                             
+features       FeatureEngineer           nothing (row-wise rules)
+preprocess   ColumnTransformer  medians, scaling, category levels
+model       LogisticRegression                   model parameters
+
+random_forest
+                            object                 learned_during_fit
+step                                                                 
+features           FeatureEngineer           nothing (row-wise rules)
+preprocess       ColumnTransformer  medians, scaling, category levels
+model       RandomForestClassifier                   model parameters
+
+gradient_boosting
+                                    object                 learned_during_fit
+step                                                                         
+features                   FeatureEngineer           nothing (row-wise rules)
+preprocess               ColumnTransformer  medians, scaling, category levels
+model       HistGradientBoostingClassifier                   model parameters
+
+Interpretation: Each model is a single object with 3 chained steps.
+                Only the last step changes between our 3 models.
+
+[2] Raw data in, predicted risk out
+Fitting logistic_regression ...
+Fitting random_forest ...
+Fitting gradient_boosting ...
+
+Raw columns per patient: 49
+       age  time_in_hospital  number_inpatient  diag_1  logistic_regression  random_forest  gradient_boosting
+0   [0-10)                 1                 0  250.83               0.0631         0.0398             0.0292
+1  [10-20)                 3                 0     276               0.1015         0.0918             0.0682
+2  [20-30)                 2                 1     648               0.1215         0.0925             0.1074
+3  [30-40)                 2                 0       8               0.0962         0.0763             0.0733
+4  [50-60)                 3                 0     414               0.0938         0.0548             0.0716
+
+Interpretation: One call to fit, one call to predict_proba.
+                The raw table goes in; a readmission risk comes out.
+
+[3] Cross-validation check
+      pipeline_in_cross_val_score  step4_manual_loop
+fold                                                
+0                          0.2342             0.2342
+1                          0.2031             0.2031
+2                          0.2064             0.2064
+3                          0.2062             0.2062
+4                          0.2115             0.2115
+
+Mean AP: 0.2123 vs 0.2123
+
+Interpretation: Both give the same average precision in every fold (largest difference 0.0000).
+                Preprocessing is learned on training folds only: no leakage.
+
+[4] Robustness
+                     rows_scored  mean_risk_clean  mean_risk_corrupted
+logistic_regression          5.0           0.0952               0.0734
+random_forest                5.0           0.0710               0.0767
+gradient_boosting            5.0           0.0699               0.0637
+
+Interpretation: New categories and missing values do not break the pipeline.
+                Mean risk moves by at most 0.022: the endpoint will not crash.
+
+[5] Saved pipelines
+                                                        file  size_mb  same_predictions_after_reload
+logistic_regression  models/step5_logistic_regression.joblib     0.01                           True
+random_forest              models/step5_random_forest.joblib    48.82                           True
+gradient_boosting      models/step5_gradient_boosting.joblib     0.29                           True
+
+Interpretation: Each saved file contains preprocessing and model together.
+                Reloaded pipelines give exactly the same predictions.
+
+Tables saved in reports/tables
+Models saved in models
+Step 6: Hyperparameter tuning
+
+[1] Optuna search
+Trials per model: 20
+Sampler: TPE, 5-fold grouped CV per trial
+
+logistic_regression  best AP: 0.2124  trial: 8   minutes: 3.1
+random_forest        best AP: 0.2279  trial: 18  minutes: 16.9
+gradient_boosting    best AP: 0.2332  trial: 18  minutes: 14.9
+
+Interpretation: Each trial refits the full pipeline on 5 grouped folds.
+                60 trials are logged; the test set stays untouched.
+
+[2] Best hyperparameters
+logistic_regression: {'C': 0.06672367170464209, 'class_weight': None}
+random_forest: {'n_estimators': 300, 'max_depth': 11, 'min_samples_leaf': 6, 'max_features': 0.38378615318787773, 'class_weight': None}
+gradient_boosting: {'learning_rate': 0.024396707414267107, 'max_iter': 250, 'max_leaf_nodes': 38, 'min_samples_leaf': 61, 'l2_regularization': 0.00393714841858338, 'class_weight': None}
+
+Interpretation: Models keeping class weights: 0 of 3.
+                The best trees are more regularised than our step 4 defaults.
+
+[3] Tuned vs untuned
+                     untuned_ap  tuned_ap    gain  fold_std  tuned_roc_auc
+logistic_regression      0.2123    0.2124  0.0001    0.0114         0.6638
+random_forest            0.2249    0.2279  0.0030    0.0137         0.6693
+gradient_boosting        0.2330    0.2332  0.0002    0.0130         0.6733
+
+Interpretation: Tuning gains at most +0.003 AP; the fold deviation is 0.013.
+                The ranking of the 3 models does not change.
+
+[4] Train vs validation
+                     untuned_gap  tuned_gap
+logistic_regression       0.0059     0.0056
+random_forest             0.6310     0.2003
+gradient_boosting         0.1575     0.1040
+
+Interpretation: Tuning moves the random forest gap from 0.63 to 0.20.
+                Models overfit less, yet validation scores barely move.
+
+[5] Saved models
+models/step6_logistic_regression_best.joblib  (0.0 MB)
+models/step6_random_forest_best.joblib  (8.0 MB)
+models/step6_gradient_boosting_best.joblib  (0.4 MB)
+
+Interpretation: The best pipeline of each model is saved for later steps.
+                The best CV score is slightly optimistic; the test set will decide.
+
+Figures saved in reports/figures
+Tables saved in reports/tables
+Models saved in models
+Step 7: Run log
+
+[1] Log completeness
+                     trials_logged  trials_expected  missing_metrics  best_trials
+logistic_regression             20               20                0            1
+random_forest                   20               20                0            1
+gradient_boosting               20               20                0            1
+
+Run log: reports/run_log.csv
+Rows: 60
+Columns: 14
+
+Interpretation: The log holds 60 trials: 20 per model, 0 missing metrics.
+                Best trials per model: 1, 1, 1.
+
+[2] Trials summary
+                     worst_ap  median_ap  best_ap  minutes  best_minus_worst
+logistic_regression    0.2070     0.2121   0.2124   3.0743            0.0053
+random_forest          0.2061     0.2235   0.2279  16.8944            0.0218
+gradient_boosting      0.2088     0.2285   0.2332  14.9253            0.0244
+
+Interpretation: logistic_regression barely reacts to its hyperparameters: 0.005 AP range.
+                Tree models vary more: up to 0.024 AP between worst and best.
+
+[3] Three best trials per model
+                              val_ap  val_ap_std  train_minus_val_ap                                                                                                                                                                    params
+logistic_regression_trial_08  0.2124      0.0114              0.0056                                                                                                                          {"C": 0.06672367170464209, "class_weight": null}
+logistic_regression_trial_12  0.2124      0.0115              0.0052                                                                                                                         {"C": 0.028610021749741015, "class_weight": null}
+logistic_regression_trial_00  0.2123      0.0115              0.0053                                                                                                                          {"C": 0.03148911647956861, "class_weight": null}
+random_forest_trial_18        0.2279      0.0137              0.2003                                                  {"n_estimators": 300, "max_depth": 11, "min_samples_leaf": 6, "max_features": 0.38378615318787773, "class_weight": null}
+random_forest_trial_17        0.2262      0.0129              0.3888                                                  {"n_estimators": 300, "max_depth": 16, "min_samples_leaf": 8, "max_features": 0.32755788817296666, "class_weight": null}
+random_forest_trial_16        0.2261      0.0127              0.2807                                                  {"n_estimators": 300, "max_depth": 16, "min_samples_leaf": 14, "max_features": 0.3902904802346495, "class_weight": null}
+gradient_boosting_trial_18    0.2332      0.0130              0.1040    {"learning_rate": 0.024396707414267107, "max_iter": 250, "max_leaf_nodes": 38, "min_samples_leaf": 61, "l2_regularization": 0.00393714841858338, "class_weight": null}
+gradient_boosting_trial_19    0.2330      0.0123              0.0703    {"learning_rate": 0.0201393208696359, "max_iter": 250, "max_leaf_nodes": 32, "min_samples_leaf": 90, "l2_regularization": 0.0033676571654596425, "class_weight": null}
+gradient_boosting_trial_16    0.2326      0.0115              0.0734  {"learning_rate": 0.014587910887895744, "max_iter": 300, "max_leaf_nodes": 39, "min_samples_leaf": 99, "l2_regularization": 0.0011252723241874849, "class_weight": null}
+
+Interpretation: The best trials of a model are close to each other.
+                Trials using class weights among them: 0 of 9.
+
+[4] Artifacts
+                                                            model_artifact  model_file_exists
+logistic_regression_trial_08  models/step6_logistic_regression_best.joblib               True
+random_forest_trial_18              models/step6_random_forest_best.joblib               True
+gradient_boosting_trial_18      models/step6_gradient_boosting_best.joblib               True
+
+Plots showing every trial:
+reports/figures/step6_optimization_history.png
+reports/figures/step7_trials_logistic_regression.png
+reports/figures/step7_trials_random_forest.png
+reports/figures/step7_trials_gradient_boosting.png
+
+Interpretation: Each best trial points to its saved model file.
+                Every trial appears in the plots listed above.
+
+Figures saved in reports/figures
+Tables saved in reports/tables
+Step 8: Explainability
+
+[1] Tree SHAP on the final model
+Model: gradient_boosting (tuned)
+Patients explained (validation fold): 15894
+Model columns: 157
+Base value (log-odds): -2.1936
+Largest gap between SHAP sum and model score: 0.000000
+
+Interpretation: SHAP values add up to the model score (largest gap 0.0000).
+                We explain patients the model did not see during training.
+
+[2] Global importance
+                          mean_abs_shap   share  rank  engineered
+number_inpatient                 0.2433  0.2090     1       False
+discharge_disposition_id         0.2000  0.1718     2       False
+prior_visits_log                 0.0743  0.0638     3        True
+number_diagnoses                 0.0644  0.0553     4       False
+diag_1_group                     0.0521  0.0448     5        True
+n_diabetes_meds                  0.0507  0.0435     6        True
+age_mid                          0.0506  0.0435     7        True
+payer_code                       0.0435  0.0374     8       False
+num_lab_procedures               0.0397  0.0341     9       False
+num_medications                  0.0339  0.0291    10       False
+medical_specialty                0.0309  0.0266    11       False
+diag_2_group                     0.0279  0.0239    12        True
+time_in_hospital                 0.0270  0.0232    13       False
+meds_per_day                     0.0251  0.0216    14        True
+insulin                          0.0245  0.0211    15       False
+
+Features: 49
+Share of the top 5: 0.5447
+
+Interpretation: number_inpatient and discharge_disposition_id dominate: 38% of importance.
+                The top five features carry 54% of the total.
+
+[3] Direction of the main effects
+                            mean_abs_shap  mean_shap_when_high_or_yes  mean_shap_when_low_or_no effect_of_high_or_yes
+number_inpatient                   0.2433                      0.3616                   -0.1827           raises risk
+discharge_disposition_id_1         0.1813                     -0.1489                    0.2306           lowers risk
+prior_visits_log                   0.0743                      0.0826                   -0.0648           raises risk
+number_diagnoses                   0.0644                      0.0678                   -0.0509           raises risk
+n_diabetes_meds                    0.0507                     -0.0002                    0.0023          not monotone
+age_mid                            0.0506                      0.0394                   -0.0268           raises risk
+num_lab_procedures                 0.0397                      0.0336                   -0.0279           raises risk
+payer_code_Missing                 0.0384                      0.0487                   -0.0311           raises risk
+diag_1_group_Circulatory           0.0358                      0.0564                   -0.0255           raises risk
+num_medications                    0.0339                      0.0337                   -0.0279           raises risk
+
+Interpretation: More past stays, more diagnoses and older age raise the risk.
+                Being discharged home lowers it: both make clinical sense.
+
+[4] Sensitive attributes and new features
+        mean_abs_shap   share  rank
+race           0.0054  0.0046    27
+gender         0.0104  0.0089    23
+
+                     mean_abs_shap   share  rank
+prior_visits_log            0.0743  0.0638     3
+diag_1_group                0.0521  0.0448     5
+n_diabetes_meds             0.0507  0.0435     6
+age_mid                     0.0506  0.0435     7
+diag_2_group                0.0279  0.0239    12
+meds_per_day                0.0251  0.0216    14
+diag_3_group                0.0239  0.0205    16
+n_med_changes               0.0097  0.0084    24
+has_prior_inpatient         0.0000  0.0000    43
+
+Interpretation: race and gender weigh 0.5% and 0.9% of importance: ranks 27 and 23.
+                New features in the top seven: 4; has_prior_inpatient weighs 0.0%.
+
+[5] Local explanations
+high risk, readmitted: predicted risk 0.6870, readmitted = 1
+                            value  shap_log_odds
+discharge_disposition_id_2    1.0         0.8456
+discharge_disposition_id_1    0.0         0.4059
+number_inpatient              1.0         0.3445
+diag_1_group_Other            1.0         0.3098
+payer_code_Missing            1.0         0.2690
+
+high risk, not readmitted: predicted risk 0.5719, readmitted = 0
+                            value  shap_log_odds
+number_inpatient             16.0         1.7563
+prior_visits_log              3.0         0.4216
+number_emergency              3.0         0.1716
+payer_code_HM                 1.0        -0.0978
+diag_3_group_Genitourinary    1.0         0.0841
+
+low risk, readmitted: predicted risk 0.0228, readmitted = 1
+                            value  shap_log_odds
+number_inpatient              0.0        -0.2778
+diag_1_group_Respiratory      1.0        -0.2181
+discharge_disposition_id_1    1.0        -0.2026
+number_diagnoses              5.0        -0.1894
+n_diabetes_meds               0.0        -0.1084
+
+median risk: predicted risk 0.0984, readmitted = 0
+                            value  shap_log_odds
+number_inpatient              1.0         0.3068
+discharge_disposition_id_1    1.0        -0.1314
+prior_visits_log              1.1         0.1138
+age_mid                      55.0        -0.0898
+glimepiride_Steady            1.0        -0.0759
+
+Interpretation: The same few features explain each individual prediction.
+                Missing payer code raises risk: a data artefact, not medicine.
+
+Figures saved in reports/figures
+Tables saved in reports/tables
+Step 9: Calibration
+Cross-validating gradient_boosting (tuned) ...
+
+[1] Calibration metrics
+Brier score: 0.0958
+Brier score if we always predict the prevalence: 0.1009
+Brier skill score: 0.0504
+ECE (10 equal-size bins): 0.0024
+Mean predicted risk: 0.1134
+Prevalence: 0.1139
+
+Interpretation: Mean predicted risk 0.113; the prevalence is 0.114.
+                ECE is 0.002: predictions are off by 0.2 points on average.
+
+[2] Reliability table
+     patients  mean_predicted  observed_rate  wilson_low  wilson_high     gap
+bin                                                                          
+0        7948          0.0421         0.0405      0.0364       0.0451  0.0016
+1        7947          0.0564         0.0557      0.0509       0.0610  0.0007
+2        7947          0.0673         0.0677      0.0624       0.0734 -0.0004
+3        7947          0.0782         0.0784      0.0727       0.0845 -0.0001
+4        7948          0.0902         0.0881      0.0820       0.0945  0.0022
+5        7947          0.1032         0.1048      0.0983       0.1117 -0.0016
+6        7947          0.1175         0.1166      0.1098       0.1239  0.0008
+7        7947          0.1372         0.1326      0.1253       0.1403  0.0046
+8        7947          0.1722         0.1796      0.1713       0.1882 -0.0074
+9        7948          0.2698         0.2748      0.2651       0.2847 -0.0050
+
+Bins where the prediction is inside the 95% interval: 10 of 10
+
+Interpretation: The prediction lies inside the 95% interval in 10 of 10 deciles.
+                The curve follows the diagonal.
+
+[3] Over- or under-confident
+Calibration slope: 1.0305 (1 is ideal, below 1 is over-confident)
+Calibration intercept: 0.0636 (0 is ideal)
+Gap in the lowest decile: +0.0016
+Gap in the highest decile: -0.0050
+
+Interpretation: Slope 1.03: the model is very slightly under-confident.
+                High risks are off by 0.5 points: negligible.
+
+[4] Recalibration
+           brier     ece  calibration_slope  average_precision
+as is     0.0958  0.0024             1.0305             0.2316
+platt     0.0958  0.0021             0.9990             0.2314
+isotonic  0.0959  0.0020             0.9672             0.2275
+
+Interpretation: Recalibration barely moves the Brier score: 0.0958 to 0.0959.
+                Isotonic changes average precision by -0.004; we keep the model as is.
+
+[5] Probabilities where we decide
+                               patients  mean_predicted  observed_rate    gap
+within 0.01 of threshold 0.09   12656.0          0.0907         0.0887  0.002
+top 10%                          7948.0          0.2698         0.2748 -0.005
+
+Interpretation: Largest gap where we decide: 0.5 points.
+                We trust these probabilities as is, for this population only.
+
+Figures saved in reports/figures
+Tables saved in reports/tables
+Step 10: Fairness audit
+Cross-validating gradient_boosting (tuned) ...
+Fitting on the development set, predicting the test set ...
+
+[1] Decision rule
+Alert volume: top 10% of patients
+Threshold (development, out-of-fold): 0.1972
+Recall at this threshold (development): 0.2413
+
+Interpretation: We flag patients with a predicted risk above 0.20.
+                The threshold comes from the development set; the test set is new.
+
+[2] Test set performance
+Patients: 19867
+average_precision: 0.2320
+roc_auc: 0.6695
+brier: 0.0959
+mean_predicted_risk: 0.1136
+prevalence: 0.1139
+flagged_share: 0.1009
+recall: 0.2435
+precision: 0.2750
+
+Cross-validated AP (step 6): 0.2332 (fold deviation 0.0130)
+
+Interpretation: Test AP 0.232; cross-validation said 0.233 (-0.001).
+                With 10% flagged, we catch 24% of readmissions.
+
+[3] Metrics per race group (before)
+                  patients  readmitted  prevalence  mean_predicted_risk
+Caucasian            14826        1731      0.1168               0.1149
+AfricanAmerican       3758         407      0.1083               0.1135
+Other or unknown      1283         125      0.0974               0.0996
+
+                  flagged_share  recall  recall_low  recall_high  false_positive_rate  precision
+Caucasian                0.1011  0.2467      0.2269       0.2675               0.0819     0.2849
+AfricanAmerican          0.1102  0.2383      0.1995       0.2820               0.0946     0.2343
+Other or unknown         0.0709  0.2160      0.1529       0.2960               0.0553     0.2967
+
+Interpretation: Recall is lowest for Other or unknown (22%), highest for Caucasian (25%).
+                Mean predicted risk stays close to the prevalence in each group.
+
+[4] Fairness gaps (before)
+                              fairness_definition  gap_before
+flagged_share                  demographic parity      0.0392
+recall                          equal opportunity      0.0307
+false_positive_rate  equalized odds (with recall)      0.0393
+precision                       predictive parity      0.0624
+
+Interpretation: We choose equal opportunity: the recall gap is 3.1 points.
+                The 95% intervals of the groups overlap: the gap may be noise.
+
+[5] Mitigation: one threshold per group
+Target recall for every group (development): 0.2413
+                  single_threshold  group_threshold  change
+Caucasian                   0.1972           0.1966 -0.0006
+AfricanAmerican             0.1972           0.2030  0.0058
+Other or unknown            0.1972           0.1824 -0.0148
+
+Interpretation: Thresholds are learned on the development set, not on the test set.
+                The threshold moves most for Other or unknown: -0.015.
+
+[6] Before vs after (test set)
+                  flagged_share  recall  recall_low  recall_high  false_positive_rate  precision
+Caucasian                0.1023  0.2484      0.2286       0.2693               0.0829     0.2836
+AfricanAmerican          0.1006  0.2260      0.1881       0.2691               0.0853     0.2434
+Other or unknown         0.0935  0.2480      0.1806       0.3305               0.0769     0.2583
+
+                         before   after  change
+gap_flagged_share        0.0392  0.0087 -0.0305
+gap_recall               0.0307  0.0224 -0.0083
+gap_false_positive_rate  0.0393  0.0085 -0.0308
+gap_precision            0.0624  0.0403 -0.0221
+flagged_share            0.1009  0.1014  0.0005
+recall                   0.2435  0.2444  0.0009
+precision                0.2750  0.2746 -0.0004
+
+Interpretation: The recall gap goes from 3.1 to 2.2 points.
+                Overall recall changes by +0.09 points, precision by -0.04.
+
+Figures saved in reports/figures
+Tables saved in reports/tables

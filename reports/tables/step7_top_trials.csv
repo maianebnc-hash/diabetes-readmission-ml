@@ -1,0 +1,10 @@
+run_id,val_ap,val_ap_std,train_minus_val_ap,params
+logistic_regression_trial_08,0.2124,0.0114,0.0056,"{""C"": 0.06672367170464209, ""class_weight"": null}"
+logistic_regression_trial_12,0.2124,0.0115,0.0052,"{""C"": 0.028610021749741015, ""class_weight"": null}"
+logistic_regression_trial_00,0.2123,0.0115,0.0053,"{""C"": 0.03148911647956861, ""class_weight"": null}"
+random_forest_trial_18,0.2279,0.0137,0.2003,"{""n_estimators"": 300, ""max_depth"": 11, ""min_samples_leaf"": 6, ""max_features"": 0.38378615318787773, ""class_weight"": null}"
+random_forest_trial_17,0.2262,0.0129,0.3888,"{""n_estimators"": 300, ""max_depth"": 16, ""min_samples_leaf"": 8, ""max_features"": 0.32755788817296666, ""class_weight"": null}"
+random_forest_trial_16,0.2261,0.0127,0.2807,"{""n_estimators"": 300, ""max_depth"": 16, ""min_samples_leaf"": 14, ""max_features"": 0.3902904802346495, ""class_weight"": null}"
+gradient_boosting_trial_18,0.2332,0.013,0.104,"{""learning_rate"": 0.024396707414267107, ""max_iter"": 250, ""max_leaf_nodes"": 38, ""min_samples_leaf"": 61, ""l2_regularization"": 0.00393714841858338, ""class_weight"": null}"
+gradient_boosting_trial_19,0.233,0.0123,0.0703,"{""learning_rate"": 0.0201393208696359, ""max_iter"": 250, ""max_leaf_nodes"": 32, ""min_samples_leaf"": 90, ""l2_regularization"": 0.0033676571654596425, ""class_weight"": null}"
+gradient_boosting_trial_16,0.2326,0.0115,0.0734,"{""learning_rate"": 0.014587910887895744, ""max_iter"": 300, ""max_leaf_nodes"": 39, ""min_samples_leaf"": 99, ""l2_regularization"": 0.0011252723241874849, ""class_weight"": null}"
