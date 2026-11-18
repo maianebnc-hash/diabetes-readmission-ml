@@ -72,7 +72,6 @@ python step10_fairness.py
 │   ├── tables/                # all result tables (CSV), prefixed by step
 │   └── run_log.csv            # every tuning trial (step 7)
 ├── run_all.log                # console output of the last full run
-├── PROBLEM.md                 # problem statement and research question
 └── requirements.txt
 ```
 
@@ -94,7 +93,8 @@ print(model.predict_proba(patients)[:, 1])  # 30-day readmission risk
 This is the commit history of our project so far:
 
 ```python
-b673808 (HEAD -> main, origin/main, origin/HEAD) Add step 9 (calibration) and step 10 (fairness) (Yasmine Regaieg, 2026-11-18)
+5fa8a39 charlotte: final run and added README (Charlotte-Delphina Rupp, 2026-11-18)
+b673808 Add step 9 (calibration) and step 10 (fairness) (Yasmine Regaieg, 2026-11-18)
 3c7f44e Merge branch 'feat/charlotte-step8' (Charlotte-Delphina Rupp, 2026-11-17)
 03837cb (feat/charlotte-step8) feat: add step 8 (Charlotte-Delphina Rupp, 2026-11-17)
 c49d85a (origin/charlotte-step7, charlotte-step7) feat: add step 7 (Charlotte-Delphina Rupp, 2026-11-17)
